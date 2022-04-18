@@ -90,12 +90,8 @@
     line))
 
 (defn extract-metadata [line]
-  (extract
-    metadata-regex
-    #(hash-map
-       :key (second %)
-       :value (nth % 2 nil))
-    line))
+  (let [res (re-find metadata-regex line)]
+    [(second res) (nth res 2 nil)]))
 
 (defn next-special-char
   ""
@@ -130,14 +126,13 @@
                  [l m])
       ;(= c ">")
       (= c \-) (let [[result & g] (re-find comment-regex str)
-                      l (count result)
-                      m {:comment (first g)}]
-                  [l m])
+                     l (count result)
+                     m {:comment (first g)}]
+                 [l m])
       )))
 
 
 (defn parse-step [line]
-  (println line)
   (loop [l line
          parsed []]
     (let [idx (next-special-char l)]
@@ -150,9 +145,11 @@
                              parsed)
                     [length i] (item (subs l idx))
                     parsed (conj parsed i)]
-                (recur (subs l (+ idx length)) parsed))
-        )
+                (recur (subs l (+ idx length)) parsed)))
       )))
+
+(defn metadata-to-cooklang [metadata]
+  (str ">> " (first metadata) ": " (second metadata)))
 
 ; TODO: generic formatter?
 (defn step-to-cooklang [parsed-step]
@@ -174,6 +171,13 @@
                       )]
     (reduce str (map item-to-cl parsed-step))))
 
+(defn recipe-to-cooklang [recipe]
+  (str/join
+    "\n\n"
+    (into
+      (vec (map metadata-to-cooklang (:metadata recipe)))
+      (map step-to-cooklang (:steps recipe)))))
+
 (defn parse-line
   "Parse a single line in a recipe.
   Depending on the start of the line it is parsed as:
@@ -181,17 +185,26 @@
    - Step
 
   Empty lines are ignored"
-  [line]
+  [line meta-cb step-cb default-cb]
   (cond
-    (str/blank? line) nil
-    (str/starts-with? line ">>") nil
-    :else (parse-step line)))
+    (str/blank? line) (default-cb)
+    (str/starts-with? line ">>") (apply meta-cb (extract-metadata line))
+    :else (step-cb (parse-step line))))
 
 (defn parse-cooklang-file
   "docstring"
   [filename]
   (with-open [rdr (io/reader filename)]
-    (reduce conj [] (filter
-                      #(not (nil? %))
-                      (map parse-line (line-seq rdr))))
-    ))
+    (loop [recipe {:metadata {}
+                   :steps    []}
+           lines (line-seq rdr)]
+      (if (empty? lines)
+        recipe
+        (let [[line & more] lines
+              new-recipe (parse-line
+                           line
+                           #(assoc recipe :metadata (assoc (:metadata recipe) %1 %2))
+                           #(assoc recipe :steps (conj (:steps recipe) %))
+                           #(identity recipe))]
+          (recur new-recipe more)))
+      )))
