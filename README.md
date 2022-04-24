@@ -1,22 +1,24 @@
 # cookbook
 
-A Clojure library designed to ... well, that part is up to you.
+A web application written in Clojure that can be used to view recipes written in [Cooklang](https://cooklang.org/docs/spec/).
 
 ## Usage
 
-FIXME
+Currently recipes are stored in plain-text (cooklang format) in the resources folder. Each recipe can be parsed using the cooklang parser and added to the application with unique urls as seen in `api/recipe`.
 
-## License
+The application can be installed and ran using `leiningen`.
 
-Copyright © 2022 FIXME
+## Structure
 
-This program and the accompanying materials are made available under the
-terms of the Eclipse Public License 2.0 which is available at
-http://www.eclipse.org/legal/epl-2.0.
+Recipes are stored in plaintext and parsed using the cooklang parsed. While the application is running they are stored in memory.
+The spec for the internal structure of the recipe can be found in `/spec.clj`.
 
-This Source Code may also be made available under the following Secondary
-Licenses when the conditions for such availability set forth in the Eclipse
-Public License, v. 2.0 are satisfied: GNU General Public License as published by
-the Free Software Foundation, either version 2 of the License, or (at your
-option) any later version, with the GNU Classpath Exception which is available
-at https://www.gnu.org/software/classpath/license.html.
+The webserver is based on `ring` using the jetty adapter. Routing is handled using `compojure` and the html is rendered with `hiccup`/
+
+## Potential future features
+
+- [ ] Search or navigation based on tags (cuisine, course, etc.).
+- [ ] Import of online recipes.
+- [ ] Adding and editing recipes.
+- [ ] Version control and viewing changes to recipes.
+

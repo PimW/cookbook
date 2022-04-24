@@ -1,5 +1,6 @@
 (ns cookbook.cooklang.formatter
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [clojure.spec.alpha :as s]))
 
 (defn step-formatter
   [format-text
@@ -19,6 +20,8 @@
 
 (defn recipe-formatter [step-formatter metadata-formatter]
   (fn [recipe]
+    {:pre [(s/valid? :recipe/recipe recipe)]
+     :post [(string? %)]}
     (str/join
       "\n\n"
       (filter #(not (or (nil? %) (str/blank? %)))
